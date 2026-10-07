@@ -1,0 +1,24 @@
+{
+  "name": "underleaf-web",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "build": "esbuild src/main.js --bundle --minify --format=esm --target=es2020 --legal-comments=none --outfile=static/app.js",
+    "watch": "esbuild src/main.js --bundle --sourcemap --format=esm --target=es2020 --outfile=static/app.js --watch"
+  },
+  "dependencies": {
+    "@codemirror/autocomplete": "^6.18.0",
+    "@codemirror/collab": "^6.1.1",
+    "@codemirror/commands": "^6.6.0",
+    "@codemirror/language": "^6.10.2",
+    "@codemirror/legacy-modes": "^6.4.1",
+    "@codemirror/search": "^6.5.6",
+    "@codemirror/state": "^6.4.1",
+    "@codemirror/view": "^6.33.0",
+    "@lezer/highlight": "^1.2.1"
+  },
+  "devDependencies": {
+    "esbuild": "^0.24.0"
+  }
+}

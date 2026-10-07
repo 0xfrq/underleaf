@@ -1,0 +1,31 @@
+[package]
+name = "underleaf"
+version = "0.1.0"
+edition = "2021"
+description = "Lightweight self-hosted collaborative LaTeX editor"
+license = "MIT"
+
+[dependencies]
+axum = { version = "0.7", features = ["ws", "multipart"] }
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "sync", "time", "process", "fs", "signal", "net"] }
+tower-http = { version = "0.6", features = ["compression-gzip"] }
+futures-util = { version = "0.3", default-features = false, features = ["sink", "std"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+rusqlite = { version = "0.32", features = ["bundled"] }
+argon2 = "0.5"
+rand = "0.8"
+sha2 = "0.10"
+hex = "0.4"
+ropey = "1.6"
+rust-embed = "8"
+mime_guess = "2"
+zip = { version = "2", default-features = false, features = ["deflate"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", default-features = false, features = ["fmt", "env-filter", "ansi"] }
+
+[profile.release]
+opt-level = 3
+lto = "fat"
+codegen-units = 1
+strip = true

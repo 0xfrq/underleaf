@@ -1,0 +1,44 @@
+# /etc/systemd/system/underleaf.service
+#
+#   sudo useradd --system --home /var/lib/underleaf --create-home underleaf
+#   sudo install -m 755 target/release/underleaf /usr/local/bin/underleaf
+#   sudo systemctl daemon-reload && sudo systemctl enable --now underleaf
+
+[Unit]
+Description=Underleaf collaborative LaTeX editor
+After=network.target
+
+[Service]
+User=underleaf
+Group=underleaf
+WorkingDirectory=/var/lib/underleaf
+ExecStart=/usr/local/bin/underleaf
+Restart=on-failure
+RestartSec=2
+
+Environment=UNDERLEAF_BIND=127.0.0.1:8080
+Environment=UNDERLEAF_DATA=/var/lib/underleaf
+Environment=UNDERLEAF_COOKIE_SECURE=true
+Environment=UNDERLEAF_ALLOW_SIGNUP=false
+Environment=UNDERLEAF_MAX_COMPILES=2
+Environment=UNDERLEAF_COMPILE_TIMEOUT=90
+Environment=RUST_LOG=underleaf=info,warn
+# Optional sandbox for compiles (see README):
+# Environment="UNDERLEAF_COMPILE_WRAPPER=bwrap --ro-bind / / --dev /dev --proc /proc --tmpfs /tmp --tmpfs /var/lib/underleaf --bind /var/lib/underleaf/compile /var/lib/underleaf/compile --unshare-all --die-with-parent"
+
+# Hardening
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/underleaf
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+LockPersonality=true
+MemoryMax=1G
+TasksMax=256
+
+[Install]
+WantedBy=multi-user.target
