@@ -2,6 +2,8 @@ import { get, post } from "./api.js";
 import { renderLogin } from "./login.js";
 import { renderDashboard } from "./dashboard.js";
 import { openEditor } from "./editor.js";
+import { openTasks, matchTasksPath } from "./tasks.js";
+import { renderMyWork } from "./mywork.js";
 import { h } from "./ui.js";
 
 const root = document.getElementById("app");
@@ -36,6 +38,8 @@ function navigate(path, replace = false) {
 }
 
 async function route() {
+  // A page may handle the new URL itself (e.g. switching views of one task board).
+  if (current && current.reroute && me && current.reroute(location.pathname)) return;
   const token = ++seq;
   if (current && current.destroy) {
     try {
@@ -61,10 +65,15 @@ async function route() {
   }
 
   const m = location.pathname.match(/^\/project\/([0-9a-f]+)\/?$/);
+  const tasks = matchTasksPath(location.pathname);
   try {
     let page;
     if (m) {
       page = await openEditor(root, m[1], ctx);
+    } else if (tasks) {
+      page = await openTasks(root, tasks[0], tasks[1], ctx);
+    } else if (/^\/tasks\/?$/.test(location.pathname)) {
+      page = await renderMyWork(root, ctx);
     } else {
       if (location.pathname !== "/") history.replaceState(null, "", "/");
       page = await renderDashboard(root, ctx);

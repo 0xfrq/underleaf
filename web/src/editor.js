@@ -18,6 +18,7 @@ import {
 import { ProjectSocket, collabSync, remoteCursors, setRemoteCursor, removeRemoteCursor } from "./collab.js";
 import { latexLanguage, highlightStyle, latexCompletion, isTexFile, extractLabels, extractBibKeys } from "./latex.js";
 import { userMenuButton } from "./dashboard.js";
+import { taskNotice } from "./tasks-common.js";
 
 const IMAGE_RE = /\.(png|jpe?g|gif|webp|bmp|svg|ico)$/i;
 const UPLOAD_BATCH_BYTES = 40 * 1024 * 1024;
@@ -74,6 +75,7 @@ export async function openEditor(root, pid, ctx) {
     h("div", { class: "spacer" }),
     E.viewSwitch,
     E.online,
+    h("a", { href: `/project/${pid}/board`, "data-link": "", class: "btn ghost", title: "Task board" }, icon("board"), h("span", { class: "hide-narrow" }, "Tasks")),
     h("button", { class: "btn ghost", title: "Share", onclick: () => shareDialog() }, icon("share"), h("span", { class: "hide-narrow" }, "Share")),
     h("button", { class: "btn ghost", title: "Project settings", onclick: () => settingsDialog() }, icon("settings")),
     h("button", { class: "btn ghost", title: "Download project as .zip", onclick: () => (location.href = `/api/projects/${pid}/download`) }, icon("download")),
@@ -1118,6 +1120,9 @@ export async function openEditor(root, pid, ctx) {
         break;
       case "chat":
         onChat(m.msg);
+        break;
+      case "task_assigned":
+        taskNotice(m, ctx.me);
         break;
       case "project_deleted":
         projectGone();

@@ -14,6 +14,20 @@ It's one Rust binary with the web UI embedded. Idle memory use is a few MB, and 
   or drag them in from your OS. Images and PDFs preview in place. You can set the main document.
 * **Projects**: create from templates (article, report, beamer, blank), import or export a `.zip`, copy,
   and share with other users as *editor* or *viewer*.
+* **Task tracker** (Jira-style), per project: issues (task, story, bug, epic) numbered like `THES-12`, with
+  assignee, priority, labels, story points, start and due dates, comments and a change history. Views:
+  * *Board*: Kanban columns (To Do, In Progress, In Review, Done) with drag and drop;
+  * *Backlog*: plan, start and complete sprints by dragging issues between them;
+  * *List*: a sortable table with CSV export;
+  * *Calendar*: issues by due date, drag to reschedule;
+  * *Timeline*: epics and their issues over time, drag to move or resize;
+  * *Summary*: open, overdue and finished counts, status and priority breakdowns, team workload, epic
+    progress and recent activity.
+
+  Filters (people, type, epic, label, status, search) work across views. **My work** lists what is assigned
+  to you, or reported by you, in every project, as a list or a calendar. Issues can be assigned to anyone
+  the project is shared with. Viewers can comment and move issues assigned to them. Boards update live,
+  and people get a notice when someone assigns them an issue while they have the project open.
 * **Accounts**: username and password (argon2), optional open sign-up, and an admin user panel.
 
 ## Building (in WSL / Linux)
@@ -108,7 +122,8 @@ cannot run scripts on your domain.
 
 ## How it works
 
-* **Storage**: SQLite (WAL) holds users, sessions, projects, the file tree and text documents. Binary files
+* **Storage**: SQLite (WAL) holds users, sessions, projects, the file tree, text documents and the task
+  tracker. New tables are created automatically on startup, so existing databases need no migration. Binary files
   are stored once per content hash in `data/blobs/`, and unreferenced blobs are garbage-collected hourly.
 * **Collaboration** uses the central-authority model of `@codemirror/collab`. Each client pushes changes
   tagged with the document version they are based on. The server accepts them only if that version is
@@ -128,6 +143,7 @@ src/
   main.rs      startup, routes, background jobs, CLI
   auth.rs      accounts, sessions, admin API
   projects.rs  projects, sharing, templates, chat history
+  tasks.rs     task tracker: issues, sprints, comments, activity
   files.rs     file tree, uploads, blob store
   collab.rs    WebSocket hub: document sync, cursors, presence, chat
   textops.rs   applies CodeMirror change sets to a rope

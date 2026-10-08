@@ -7,6 +7,7 @@ mod db;
 mod error;
 mod files;
 mod projects;
+mod tasks;
 mod textops;
 mod util;
 mod zipio;
@@ -15,7 +16,7 @@ use std::{collections::HashSet, fs, sync::Arc, time::Duration};
 
 use axum::{
     extract::DefaultBodyLimit,
-    routing::{delete, get, post},
+    routing::{delete, get, patch, post},
     Router,
 };
 use rusqlite::params;
@@ -154,6 +155,32 @@ fn build_router(app: Shared) -> Router {
         .route("/api/projects/:pid/compile", post(compile::compile))
         .route("/api/projects/:pid/output/:name", get(compile::output))
         .route("/api/projects/:pid/clear-cache", post(compile::clear_cache))
+        .route("/api/tasks", get(tasks::mine))
+        .route(
+            "/api/projects/:pid/tasks",
+            get(tasks::board).post(tasks::create_task),
+        )
+        .route(
+            "/api/projects/:pid/tasks/:tid",
+            get(tasks::get_task)
+                .patch(tasks::update_task)
+                .delete(tasks::delete_task),
+        )
+        .route(
+            "/api/projects/:pid/tasks/:tid/comments",
+            post(tasks::add_comment),
+        )
+        .route(
+            "/api/projects/:pid/tasks/:tid/comments/:cid",
+            patch(tasks::edit_comment).delete(tasks::delete_comment),
+        )
+        .route("/api/projects/:pid/sprints", post(tasks::create_sprint))
+        .route(
+            "/api/projects/:pid/sprints/:sid",
+            patch(tasks::update_sprint).delete(tasks::delete_sprint),
+        )
+        .route("/api/projects/:pid/board", patch(tasks::update_board))
+        .route("/api/projects/:pid/activity", get(tasks::activity))
         .route("/ws/projects/:pid", get(collab::ws_handler))
         .with_state(app);
 

@@ -17,6 +17,29 @@ export function userMenuButton(ctx) {
   return btn;
 }
 
+/**
+ * Brand plus "Projects | My work" navigation. The badge counts open issues assigned to the user;
+ * pages that already loaded them call nav.setCount(n), otherwise it is fetched.
+ */
+export function topNav(ctx, active) {
+  const badge = h("span", { class: "badge hidden" });
+  const nav = h("nav", { class: "top-nav" },
+    h("a", { href: "/", "data-link": "", class: "brand" }, logo(), h("span", { class: "hide-narrow" }, "Underleaf")),
+    h("a", { href: "/", "data-link": "", class: "nav-link" + (active === "projects" ? " active" : "") }, "Projects"),
+    h("a", { href: "/tasks", "data-link": "", class: "nav-link" + (active === "work" ? " active" : "") }, "My work", badge));
+  nav.setCount = (n) => {
+    badge.textContent = String(n);
+    badge.title = `${n} open issue${n === 1 ? "" : "s"} assigned to you`;
+    badge.classList.toggle("hidden", !n);
+  };
+  if (active !== "work") {
+    get("/api/tasks")
+      .then((r) => nav.setCount(r.tasks.filter((t) => t.assignee_id === ctx.me.id && t.status !== "done").length))
+      .catch(() => {});
+  }
+  return nav;
+}
+
 function profileDialog(ctx) {
   const input = h("input", { type: "text" });
   input.value = ctx.me.display_name;
@@ -121,7 +144,7 @@ export async function renderDashboard(root, ctx) {
   const fileInput = h("input", { type: "file", accept: ".zip,application/zip", class: "hidden", onchange: () => importZip() });
 
   const page = h("div", { class: "dash" },
-    h("header", { class: "topbar" }, h("span", { class: "brand" }, logo(), "Underleaf"), h("div", { class: "spacer" }), userMenuButton(ctx)),
+    h("header", { class: "topbar" }, topNav(ctx, "projects"), h("div", { class: "spacer" }), userMenuButton(ctx)),
     h("div", { class: "dash-body" },
       h("div", { class: "dash-head" },
         h("h1", null, "Projects"),
@@ -155,13 +178,16 @@ export async function renderDashboard(root, ctx) {
         h("td", { class: "col-owner muted" }, p.owner),
         h("td", { class: "col-role" }, h("span", { class: `role-badge ${p.role}` }, p.role)),
         h("td", { class: "muted" }, timeAgo(p.updated_at)),
-        h("td", { class: "actions" }, h("button", { class: "icon-btn", title: "Actions", onclick: (e) => projectMenu(e, p) }, icon("more"))))))));
+        h("td", { class: "actions" },
+          h("a", { class: "icon-btn", href: `/project/${p.id}/board`, "data-link": "", title: "Task board" }, icon("board")),
+          h("button", { class: "icon-btn", title: "Actions", onclick: (e) => projectMenu(e, p) }, icon("more"))))))));
   }
 
   function projectMenu(e, p) {
     const r = e.currentTarget.getBoundingClientRect();
     contextMenu(r.right - 170, r.bottom + 2, [
       { label: "Open", action: () => ctx.navigate(`/project/${p.id}`) },
+      { label: "Task board", action: () => ctx.navigate(`/project/${p.id}/board`) },
       p.role !== "viewer" ? { label: "Rename", action: () => rename(p) } : null,
       { label: "Make a copy", action: () => copy(p) },
       { label: "Download .zip", action: () => (location.href = `/api/projects/${p.id}/download`) },

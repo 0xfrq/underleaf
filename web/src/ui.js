@@ -47,6 +47,17 @@ const ICONS = {
   log: '<path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>',
   external: '<path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14 21 3"/>',
   user: '<circle cx="12" cy="8" r="4"/><path d="M4 21v-1a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v1"/>',
+  board: '<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18M15 3v18"/>',
+  list: '<path d="M8 6h13M8 12h13M8 18h13"/><rect x="3" y="4.5" width="2.5" height="3" rx=".5"/><rect x="3" y="10.5" width="2.5" height="3" rx=".5"/><rect x="3" y="16.5" width="2.5" height="3" rx=".5"/>',
+  backlog: '<path d="M4 6h16M4 10h16M4 14h10M4 18h7"/>',
+  calendar: '<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>',
+  timeline: '<path d="M3 4v16M7 7h8M10 12h10M7 17h6"/>',
+  chart: '<path d="M3 3v18h18"/><path d="M8 17v-5M13 17V8M18 17v-9"/>',
+  plus: '<path d="M12 5v14M5 12h14"/>',
+  clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+  link: '<path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/>',
+  trash: '<path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>',
+  check: '<path d="m5 12 5 5L20 7"/>',
 };
 
 export function icon(name) {
@@ -80,6 +91,11 @@ export function toast(msg, kind = "info", ms = 3800) {
   }, ms);
 }
 
+// Open modals, innermost last: Escape only closes the top one. Pages may remove overlays
+// directly when they unmount, so disconnected entries are ignored.
+const modalStack = [];
+const topModal = () => modalStack.filter((o) => o.isConnected).pop();
+
 export function modal({ title, body, actions = [], wide = false, onClose }) {
   const overlay = h("div", { class: "modal-overlay" });
   const box = h(
@@ -94,15 +110,22 @@ export function modal({ title, body, actions = [], wide = false, onClose }) {
     if (e.target === overlay) close();
   });
   const onKey = (e) => {
-    if (e.key === "Escape") close();
+    if (e.key === "Escape" && !e.defaultPrevented && topModal() === overlay) {
+      e.preventDefault();
+      close();
+    }
   };
   document.addEventListener("keydown", onKey);
   document.body.append(overlay);
+  for (let i = modalStack.length - 1; i >= 0; i--) if (!modalStack[i].isConnected) modalStack.splice(i, 1);
+  modalStack.push(overlay);
   let closed = false;
   function close() {
     if (closed) return;
     closed = true;
     overlay.remove();
+    const i = modalStack.indexOf(overlay);
+    if (i >= 0) modalStack.splice(i, 1);
     document.removeEventListener("keydown", onKey);
     if (onClose) onClose();
   }
@@ -205,17 +228,21 @@ export function contextMenu(x, y, items) {
   const onDown = (e) => {
     if (!menu.contains(e.target)) close();
   };
+  // Capture phase, so Escape closes the menu without also closing a modal underneath.
   const onKey = (e) => {
-    if (e.key === "Escape") close();
+    if (e.key === "Escape") {
+      e.preventDefault();
+      close();
+    }
   };
   function close() {
     menu.remove();
     document.removeEventListener("mousedown", onDown, true);
-    document.removeEventListener("keydown", onKey);
+    document.removeEventListener("keydown", onKey, true);
   }
   setTimeout(() => {
     document.addEventListener("mousedown", onDown, true);
-    document.addEventListener("keydown", onKey);
+    document.addEventListener("keydown", onKey, true);
   }, 0);
   return close;
 }

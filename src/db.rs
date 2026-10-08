@@ -67,6 +67,75 @@ CREATE TABLE IF NOT EXISTS chat (
     created_at INTEGER NOT NULL
 );
 CREATE INDEX IF NOT EXISTS chat_project ON chat(project_id, id);
+
+-- Task tracker. Every project can have a board; issues are numbered per project (KEY-1, KEY-2, ...).
+CREATE TABLE IF NOT EXISTS boards (
+    project_id TEXT PRIMARY KEY REFERENCES projects(id) ON DELETE CASCADE,
+    task_key   TEXT NOT NULL,
+    next_num   INTEGER NOT NULL DEFAULT 1
+);
+
+CREATE TABLE IF NOT EXISTS sprints (
+    id           INTEGER PRIMARY KEY,
+    project_id   TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+    name         TEXT NOT NULL,
+    goal         TEXT NOT NULL DEFAULT '',
+    state        TEXT NOT NULL DEFAULT 'planned',
+    start_date   TEXT,
+    end_date     TEXT,
+    created_at   INTEGER NOT NULL,
+    completed_at INTEGER
+);
+CREATE INDEX IF NOT EXISTS sprints_project ON sprints(project_id);
+
+CREATE TABLE IF NOT EXISTS tasks (
+    id          INTEGER PRIMARY KEY,
+    project_id  TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+    num         INTEGER NOT NULL,
+    title       TEXT NOT NULL,
+    description TEXT NOT NULL DEFAULT '',
+    kind        TEXT NOT NULL DEFAULT 'task',
+    status      TEXT NOT NULL DEFAULT 'todo',
+    priority    TEXT NOT NULL DEFAULT 'medium',
+    assignee_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+    reporter_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+    sprint_id   INTEGER REFERENCES sprints(id) ON DELETE SET NULL,
+    parent_id   INTEGER REFERENCES tasks(id) ON DELETE SET NULL,
+    start_date  TEXT,
+    due_date    TEXT,
+    estimate    INTEGER,
+    labels      TEXT NOT NULL DEFAULT '',
+    sort_key    REAL NOT NULL DEFAULT 0,
+    created_at  INTEGER NOT NULL,
+    updated_at  INTEGER NOT NULL,
+    resolved_at INTEGER
+);
+CREATE UNIQUE INDEX IF NOT EXISTS tasks_num ON tasks(project_id, num);
+CREATE INDEX IF NOT EXISTS tasks_assignee ON tasks(assignee_id);
+CREATE INDEX IF NOT EXISTS tasks_reporter ON tasks(reporter_id);
+CREATE INDEX IF NOT EXISTS tasks_sprint ON tasks(sprint_id);
+CREATE INDEX IF NOT EXISTS tasks_parent ON tasks(parent_id);
+
+CREATE TABLE IF NOT EXISTS task_comments (
+    id         INTEGER PRIMARY KEY,
+    task_id    INTEGER NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
+    user_id    INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    body       TEXT NOT NULL,
+    created_at INTEGER NOT NULL,
+    edited_at  INTEGER
+);
+CREATE INDEX IF NOT EXISTS task_comments_task ON task_comments(task_id, id);
+
+CREATE TABLE IF NOT EXISTS task_activity (
+    id         INTEGER PRIMARY KEY,
+    task_id    INTEGER NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
+    user_id    INTEGER REFERENCES users(id) ON DELETE SET NULL,
+    field      TEXT NOT NULL,
+    old_value  TEXT,
+    new_value  TEXT,
+    created_at INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS task_activity_task ON task_activity(task_id, id);
 "#;
 
 /// A single SQLite connection guarded by a mutex. All queries are short, so this is
